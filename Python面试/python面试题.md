@@ -738,152 +738,7 @@ print("生产消费完成")
    # 多线程可以并行等待I/O，显著减少总时间
    ```
 
-2. **GUI应用程序**：
-   ```python
-   import tkinter as tk
-   import threading
-   import time
-   
-   def long_running_task():
-       # 模拟耗时任务
-       time.sleep(3)
-       result_label.config(text="任务完成！")
-   
-   def start_task():
-       # 在新线程中执行耗时任务，避免GUI冻结
-       task_thread = threading.Thread(target=long_running_task)
-       task_thread.start()
-   
-   # 创建GUI
-   root = tk.Tk()
-   root.title("多线程GUI示例")
-   
-   start_button = tk.Button(root, text="开始任务", command=start_task)
-   start_button.pack(pady=20)
-   
-   result_label = tk.Label(root, text="等待任务...")
-   result_label.pack(pady=20)
-   
-   root.mainloop()
-   ```
 
-3. **网络服务器**：
-   ```python
-   import socket
-   import threading
-   
-   def handle_client(client_socket, address):
-       print(f"连接来自: {address}")
-       # 处理客户端请求
-       request = client_socket.recv(1024)
-       response = b"HTTP/1.1 200 OK\r\n\r\nHello, World!"
-       client_socket.send(response)
-       client_socket.close()
-   
-   def start_server():
-       server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-       server.bind(('localhost', 8080))
-       server.listen(5)
-       
-       print("服务器启动，监听端口 8080")
-       
-       while True:
-           client, addr = server.accept()
-           # 为每个客户端创建新线程
-           client_thread = threading.Thread(
-               target=handle_client, 
-               args=(client, addr)
-           )
-           client_thread.start()
-   
-   # 启动服务器
-   server_thread = threading.Thread(target=start_server)
-   server_thread.start()
-   ```
-
-4. **定时任务**：
-   ```python
-   import threading
-   import time
-   
-   class PeriodicTask:
-       def __init__(self, interval, func):
-           self.interval = interval
-           self.func = func
-           self.running = False
-           
-       def start(self):
-           self.running = True
-           self.thread = threading.Thread(target=self._run)
-           self.thread.start()
-           
-       def stop(self):
-           self.running = False
-           
-       def _run(self):
-           while self.running:
-               self.func()
-               time.sleep(self.interval)
-   
-   # 使用示例
-   def print_time():
-       print(f"当前时间: {time.ctime()}")
-   
-   task = PeriodicTask(interval=5, func=print_time)
-   task.start()
-   
-   # 运行30秒后停止
-   time.sleep(30)
-   task.stop()
-   ```
-
-5. **数据采集和监控**：
-   ```python
-   import threading
-   import time
-   import random
-   
-   class DataCollector:
-       def __init__(self):
-           self.data = []
-           self.lock = threading.Lock()
-           self.collecting = False
-           
-       def collect_from_source(self, source_id):
-           while self.collecting:
-               # 模拟数据采集
-               value = random.random()
-               
-               with self.lock:
-                   self.data.append((source_id, value, time.time()))
-               
-               time.sleep(0.1)  # 采集间隔
-           
-       def start_collection(self, num_sources=3):
-           self.collecting = True
-           self.threads = []
-           
-           for i in range(num_sources):
-               t = threading.Thread(
-                   target=self.collect_from_source,
-                   args=(i,)
-               )
-               t.start()
-               self.threads.append(t)
-           
-       def stop_collection(self):
-           self.collecting = False
-           for t in self.threads:
-               t.join()
-           
-           print(f"收集到 {len(self.data)} 条数据")
-   
-   # 使用示例
-   collector = DataCollector()
-   collector.start_collection(num_sources=3)
-   time.sleep(5)  # 收集5秒
-   collector.stop_collection()
-   ```
 
 **注意事项：**
 
@@ -894,6 +749,7 @@ print("生产消费完成")
 5. **异常处理**：线程异常不会传播到主线程
 
 **替代方案：**
+
 - CPU密集型任务：使用`multiprocessing`
 - 高并发I/O：使用`asyncio`
 - 简单并行：使用`concurrent.futures.ThreadPoolExecutor`
@@ -1116,70 +972,6 @@ print(hash((1, 2)))   # 有哈希值
 # print(hash({'a': 1})) # 报错：TypeError
 ```
 
-4. **性能考虑**：
-```python
-import time
-
-# 不可变对象操作（创建新对象）
-start = time.time()
-s = ""
-for i in range(10000):
-    s += str(i)  # 每次创建新字符串
-print(f"字符串拼接耗时: {time.time() - start:.4f}秒")
-
-# 可变对象操作（修改原对象）
-start = time.time()
-lst = []
-for i in range(10000):
-    lst.append(str(i))  # 修改原列表
-result = "".join(lst)
-print(f"列表追加+join耗时: {time.time() - start:.4f}秒")
-```
-
-**自定义不可变类：**
-```python
-class ImmutablePoint:
-    __slots__ = ('_x', '_y')  # 限制属性
-    
-    def __init__(self, x, y):
-        self._x = x
-        self._y = y
-    
-    @property
-    def x(self):
-        return self._x
-    
-    @property
-    def y(self):
-        return self._y
-    
-    def __hash__(self):
-        return hash((self._x, self._y))
-    
-    def __eq__(self, other):
-        if not isinstance(other, ImmutablePoint):
-            return False
-        return self._x == other._x and self._y == other._y
-    
-    def __repr__(self):
-        return f"Point({self._x}, {self._y})"
-
-# 使用
-p1 = ImmutablePoint(1, 2)
-p2 = ImmutablePoint(1, 2)
-print(p1 == p2)  # True
-print(hash(p1) == hash(p2))  # True
-
-# 可以作为字典键
-points_dict = {p1: "A", p2: "B"}
-print(points_dict)  # {Point(1, 2): 'B'}
-```
-
-**最佳实践：**
-1. 使用不可变对象作为字典键和集合元素
-2. 函数中避免意外修改可变参数
-3. 多线程环境下优先使用不可变对象
-4. 性能敏感时考虑可变对象的原地操作
 ### 13. 请解释 Python 中的迭代器、生成器和列表推导式
 
 **答案：**
@@ -1341,402 +1133,15 @@ print(f"列表推导式求和: {time.time() - start:.4f}秒，结果: {total}")
    - 需要立即使用所有元素
    - 数据量不大
    - 代码简洁性更重要
-
 2. **使用生成器**：
    - 处理大数据流
    - 只需要部分结果
    - 内存有限
    - 实现协程
-
 3. **使用迭代器**：
    - 需要复杂的遍历逻辑
    - 自定义容器类
-   - 需要反向迭代等特殊功能
 
-**高级示例：**
-```python
-# 生成器管道（数据处理流水线）
-def read_lines(file_path):
-    with open(file_path, 'r') as f:
-        for line in f:
-            yield line.strip()
-
-def filter_lines(lines, keyword):
-    for line in lines:
-        if keyword in line:
-            yield line
-
-def transform_lines(lines):
-    for line in lines:
-        yield line.upper()
-
-# 组合生成器
-lines = read_lines('data.txt')
-filtered = filter_lines(lines, 'error')
-transformed = transform_lines(filtered)
-
-for result in transformed:
-    print(result)
-
-# 无限生成器
-def infinite_counter():
-    count = 0
-    while True:
-        yield count
-        count += 1
-
-counter = infinite_counter()
-for i in range(5):
-    print(next(counter))  # 0, 1, 2, 3, 4
-```
-
-**最佳实践：**
-1. 大数据处理使用生成器
-2. 简单列表创建使用列表推导式
-3. 自定义遍历逻辑使用迭代器
-4. 注意生成器的一次性使用特性
-### 14. 请说明Python 2和Python 3的区别
-
-**答案：**
-Python 3是Python语言的重大更新，与Python 2不完全兼容。主要区别如下：
-
-**1. 打印函数**
-```python
-# Python 2
-print "Hello"  # 语句
-print "Hello", "World"  # 输出: Hello World
-
-# Python 3
-print("Hello")  # 函数
-print("Hello", "World")  # 输出: Hello World
-print("Hello", "World", sep=", ")  # 输出: Hello, World
-```
-
-**2. 整数除法**
-```python
-# Python 2
-print 5 / 2      # 2 (整数除法)
-print 5.0 / 2    # 2.5 (浮点数除法)
-print 5 // 2     # 2 (显式整数除法)
-
-# Python 3
-print(5 / 2)     # 2.5 (真除法)
-print(5 // 2)    # 2 (整数除法)
-```
-
-**3. Unicode支持**
-```python
-# Python 2
-s = "你好"  # 字节字符串
-u = u"你好"  # Unicode字符串
-
-# Python 3
-s = "你好"  # Unicode字符串
-b = b"hello"  # 字节字符串
-```
-
-**4. xrange vs range**
-```python
-# Python 2
-range(10)   # 返回列表 [0, 1, ..., 9]
-xrange(10)  # 返回生成器
-
-# Python 3
-range(10)   # 返回range对象（类似生成器）
-list(range(10))  # 转换为列表
-```
-
-**5. 异常语法**
-```python
-# Python 2
-try:
-    raise ValueError, "错误"
-except ValueError, e:
-    print e
-
-# Python 3
-try:
-    raise ValueError("错误")
-except ValueError as e:
-    print(e)
-```
-
-**6. 输入函数**
-```python
-# Python 2
-raw_input("输入: ")  # 返回字符串
-input("输入: ")      # 执行表达式
-
-# Python 3
-input("输入: ")      # 返回字符串
-eval(input("输入: ")) # 执行表达式
-```
-
-**7. 迭代器方法**
-```python
-# Python 2
-d = {'a': 1, 'b': 2}
-d.keys()    # 返回列表 ['a', 'b']
-d.values()  # 返回列表 [1, 2]
-d.items()   # 返回列表 [('a', 1), ('b', 2)]
-
-# Python 3
-d = {'a': 1, 'b': 2}
-d.keys()    # 返回dict_keys视图
-d.values()  # 返回dict_values视图
-d.items()   # 返回dict_items视图
-list(d.keys())  # 转换为列表
-```
-
-**8. 类定义**
-```python
-# Python 2
-class MyClass:
-    pass
-
-class MyClass(object):  # 新式类
-    pass
-
-# Python 3
-class MyClass:  # 默认继承object
-    pass
-```
-
-**9. 元类语法**
-```python
-# Python 2
-class MyClass:
-    __metaclass__ = MyMeta
-
-# Python 3
-class MyClass(metaclass=MyMeta):
-    pass
-```
-
-**10. 其他重要区别**
-
-| 特性 | Python 2 | Python 3 |
-|------|----------|----------|
-| **默认编码** | ASCII | UTF-8 |
-| **字符串类型** | str(字节), unicode | str(Unicode), bytes |
-| **排序比较** | 允许不同类型比较 | 不允许不同类型比较 |
-| **round函数** | 银行家舍入 | 四舍五入 |
-| **字典顺序** | 无序 | 3.7+有序 |
-| **super()** | 需要参数 | 可无参数 |
-| **next()函数** | obj.next() | next(obj) |
-| **模块重命名** | 无 | urllib2→urllib.request |
-
-**迁移工具：**
-```bash
-# 2to3工具自动转换
-2to3 -w my_script.py
-
-# 检查兼容性
-python -3 my_script.py
-```
-
-**最佳实践：**
-1. 新项目使用Python 3
-2. 旧项目逐步迁移到Python 3
-3. 使用`__future__`导入兼容特性
-4. 测试代码在Python 2和3下的表现
-### 15. Python有哪些常用的库，你是否使用过request库
-
-**答案：**
-
-**Python常用库分类：**
-
-**1. Web开发**
-- **Django**：全功能Web框架
-- **Flask**：轻量级Web框架
-- **FastAPI**：高性能API框架
-- **Requests**：HTTP请求库（已使用）
-- **BeautifulSoup**：HTML解析
-- **Scrapy**：爬虫框架
-
-**2. 数据科学**
-- **NumPy**：数值计算
-- **Pandas**：数据分析
-- **Matplotlib**：数据可视化
-- **Seaborn**：统计可视化
-- **Scikit-learn**：机器学习
-- **Jupyter**：交互式笔记本
-
-**3. 人工智能**
-- **TensorFlow**：深度学习框架
-- **PyTorch**：深度学习框架
-- **Keras**：神经网络API
-- **OpenCV**：计算机视觉
-- **NLTK**：自然语言处理
-- **spaCy**：工业级NLP
-
-**4. 数据库**
-- **SQLAlchemy**：ORM框架
-- **Psycopg2**：PostgreSQL适配器
-- **PyMySQL**：MySQL适配器
-- **Redis**：Redis客户端
-- **MongoDB**：MongoDB驱动
-
-**5. 自动化与运维**
-- **Fabric**：远程部署
-- **Ansible**：配置管理
-- **Celery**：分布式任务队列
-- **APScheduler**：定时任务
-- **Paramiko**：SSH库
-
-**6. 测试与调试**
-- **pytest**：测试框架
-- **unittest**：单元测试
-- **Selenium**：Web自动化测试
-- **pdb**：Python调试器
-- **logging**：日志记录
-
-**Requests库详细使用：**
-
-**安装：**
-```bash
-pip install requests
-```
-
-**基本用法：**
-```python
-import requests
-
-# GET请求
-response = requests.get('https://httpbin.org/get')
-print(response.status_code)  # 200
-print(response.json())  # 解析JSON响应
-
-# 带参数的GET请求
-params = {'key1': 'value1', 'key2': 'value2'}
-response = requests.get('https://httpbin.org/get', params=params)
-
-# POST请求
-data = {'username': 'admin', 'password': 'secret'}
-response = requests.post('https://httpbin.org/post', data=data)
-
-# JSON POST请求
-json_data = {'name': 'Alice', 'age': 30}
-response = requests.post('https://httpbin.org/post', json=json_data)
-
-# 设置请求头
-headers = {'User-Agent': 'my-app/1.0'}
-response = requests.get('https://httpbin.org/headers', headers=headers)
-
-# 处理响应
-response = requests.get('https://httpbin.org/get')
-print(response.text)  # 文本内容
-print(response.content)  # 二进制内容
-print(response.headers)  # 响应头
-print(response.cookies)  # Cookies
-```
-
-**高级功能：**
-```python
-import requests
-
-# 会话保持（保持Cookies）
-session = requests.Session()
-session.get('https://httpbin.org/cookies/set/sessioncookie/123456789')
-response = session.get('https://httpbin.org/cookies')
-print(response.json())  # 包含sessioncookie
-
-# 超时设置
-try:
-    response = requests.get('https://httpbin.org/delay/10', timeout=5)
-except requests.exceptions.Timeout:
-    print("请求超时")
-
-# SSL证书验证
-response = requests.get('https://httpbin.org/get', verify=True)  # 默认验证
-response = requests.get('https://httpbin.org/get', verify=False)  # 不验证（不推荐）
-
-# 代理设置
-proxies = {
-    'http': 'http://10.10.1.10:3128',
-    'https': 'http://10.10.1.10:1080',
-}
-response = requests.get('http://example.com', proxies=proxies)
-
-# 文件上传
-files = {'file': open('report.xls', 'rb')}
-response = requests.post('https://httpbin.org/post', files=files)
-
-# 流式下载
-response = requests.get('https://httpbin.org/stream/20', stream=True)
-for line in response.iter_lines():
-    if line:
-        print(line.decode('utf-8'))
-
-# 自定义认证
-from requests.auth import HTTPBasicAuth
-response = requests.get(
-    'https://httpbin.org/basic-auth/user/passwd',
-    auth=HTTPBasicAuth('user', 'passwd')
-)
-
-# 事件钩子
-def print_url(r, *args, **kwargs):
-    print(r.url)
-
-response = requests.get('https://httpbin.org/get', hooks={'response': [print_url]})
-```
-
-**错误处理：**
-```python
-import requests
-from requests.exceptions import RequestException
-
-try:
-    response = requests.get('https://httpbin.org/status/404')
-    response.raise_for_status()  # 检查HTTP错误
-except requests.exceptions.HTTPError as err:
-    print(f"HTTP错误: {err}")
-except requests.exceptions.ConnectionError as err:
-    print(f"连接错误: {err}")
-except requests.exceptions.Timeout as err:
-    print(f"超时错误: {err}")
-except RequestException as err:
-    print(f"请求错误: {err}")
-```
-
-**性能优化：**
-```python
-import requests
-import time
-from concurrent.futures import ThreadPoolExecutor
-
-# 同步请求（慢）
-urls = ['https://httpbin.org/delay/1'] * 10
-
-start = time.time()
-for url in urls:
-    requests.get(url)
-print(f"同步耗时: {time.time() - start:.2f}秒")
-
-# 异步请求（快）
-def fetch_url(url):
-    return requests.get(url).status_code
-
-start = time.time()
-with ThreadPoolExecutor(max_workers=10) as executor:
-    results = list(executor.map(fetch_url, urls))
-print(f"异步耗时: {time.time() - start:.2f}秒")
-print(f"结果: {results}")
-```
-
-**Requests替代方案：**
-- **aiohttp**：异步HTTP客户端
-- **httpx**：支持HTTP/2和异步
-- **urllib3**：Requests的底层库
-- **http.client**：标准库HTTP客户端
-
-**最佳实践：**
-1. 使用会话保持连接
-2. 设置合理的超时时间
-3. 处理所有可能的异常
-4. 使用连接池提高性能
-5. 遵循API的速率限制
 ### 16. 解释Python中的字典（Dictionaries）以及它们是如何工作的。
 
 **答案：**
@@ -1796,6 +1201,7 @@ for value in person.values():  # 遍历值
 字典在底层使用哈希表（hash table）实现，这使得查找、插入、删除操作的平均时间复杂度为O(1)。
 
 **哈希表原理：**
+
 1. **哈希函数**：将键转换为整数（哈希值）
 2. **哈希桶**：数组存储键值对
 3. **冲突解决**：使用开放寻址法或链地址法
@@ -1961,763 +1367,1236 @@ class SimpleDict:
    process_data(**data)  # 解包字典
    ```
 
-**内存优化：**
+1. **多线程**：共享进程内存，受 GIL 限制，**CPU 密集型效率低**，适合 IO 密集型；轻量、资源占用小。
+2. **多进程**：独立内存空间，无 GIL 限制，**CPU 密集型效率高**；重量大、资源占用高，进程间通信复杂。
 
-1. **使用__slots__**：
-   ```python
-   class Point:
-       __slots__ = ('x', 'y')  # 固定属性，节省内存
-       
-       def __init__(self, x, y):
-           self.x = x
-           self.y = y
-   ```
+### 19. 如何理解 Python 中的闭包（Closures）？
 
-2. **使用namedtuple**：
-   ```python
-   from collections import namedtuple
-   
-   Person = namedtuple('Person', ['name', 'age', 'city'])
-   p = Person('Alice', 30, 'NY')
-   print(p.name, p.age)  # 类似字典但不可变
-   ```
+嵌套函数中，**内部函数引用外部函数的变量 / 参数**，且外部函数返回内部函数，形成闭包；延长外部变量生命周期，实现数据封装。
 
-**字典的应用场景：**
-1. 缓存计算结果
-2. 配置存储
-3. 数据分组
-4. 频率统计
-5. 对象属性存储
-### 17. 你了解Python基础内容，你使用Python主要做什么
-
-**答案：**
-
-**Python的主要应用领域：**
-
-**1. Web开发**
 ```python
-# Flask示例
-from flask import Flask, jsonify, request
+def outer_function(x):
+    def inner_function(y):
+        return x + y  # 这个 inner_function 是闭包，它能访问 x
+    return inner_function
 
-app = Flask(__name__)
-
-@app.route('/api/users', methods=['GET'])
-def get_users():
-    users = [
-        {'id': 1, 'name': 'Alice', 'email': 'alice@example.com'},
-        {'id': 2, 'name': 'Bob', 'email': 'bob@example.com'}
-    ]
-    return jsonify(users)
-
-@app.route('/api/users', methods=['POST'])
-def create_user():
-    data = request.get_json()
-    # 处理用户创建逻辑
-    return jsonify({'message': 'User created', 'user': data}), 201
-
-if __name__ == '__main__':
-    app.run(debug=True)
+add_five = outer_function(5)
+print(add_five(3))  # 输出 8
 ```
 
-**2. 数据科学与分析**
+### 20. 简述 Python 面向对象的三个特征，并说明如何用代码实现父类的继承
+
+**三大特征**：封装、继承、多态:不同类的对象对同一方法做出不同响应
+
+多态:
+
 ```python
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-
-# 数据加载与清洗
-df = pd.read_csv('sales_data.csv')
-df = df.dropna()  # 删除缺失值
-df['date'] = pd.to_datetime(df['date'])
-
-# 数据分析
-monthly_sales = df.groupby(df['date'].dt.month)['sales'].sum()
-print(f"月度销售统计:\n{monthly_sales}")
-
-# 数据可视化
-plt.figure(figsize=(10, 6))
-plt.plot(monthly_sales.index, monthly_sales.values, marker='o')
-plt.title('Monthly Sales Trend')
-plt.xlabel('Month')
-plt.ylabel('Sales')
-plt.grid(True)
-plt.savefig('sales_trend.png')
-
-# 机器学习
-X = df[['price', 'advertising']]
-y = df['sales']
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-model = LinearRegression()
-model.fit(X_train, y_train)
-predictions = model.predict(X_test)
-print(f"模型R²分数: {model.score(X_test, y_test):.2f}")
+class Animal:
+   def make_sound(self):
+       print("动物发音")
+class Dog(Animal):
+   def make_sound(self):
+       print("汪汪")
+class Cat(Animal):
+   def make_sound(self):
+       print("喵喵")
+def animal_sound(animal):
+   animal.make_sound()
+# 创建不同的对象
+dog = Dog()
+cat = Cat()
+# 调用同一个函数，传入不同的对象
+animal_sound(dog) # 输出: 汪汪
+animal_sound(cat) # 输出: 喵喵
 ```
 
-**3. 自动化脚本**
+**继承代码**：
+
 ```python
-import os
-import shutil
-import datetime
-import schedule
-import time
+class Parent:  # 父类
+    def func(self):
+        print("父类方法")
 
-def backup_files(source_dir, backup_dir):
-    """自动备份文件"""
-    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-    backup_path = os.path.join(backup_dir, f'backup_{timestamp}')
-    
-    if not os.path.exists(backup_dir):
-        os.makedirs(backup_dir)
-    
-    # 复制文件
-    for item in os.listdir(source_dir):
-        source_item = os.path.join(source_dir, item)
-        backup_item = os.path.join(backup_path, item)
-        
-        if os.path.isdir(source_item):
-            shutil.copytree(source_item, backup_item)
-        else:
-            shutil.copy2(source_item, backup_item)
-    
-    print(f"备份完成: {backup_path}")
-    return backup_path
-
-def clean_old_backups(backup_dir, days_to_keep=7):
-    """清理旧备份"""
-    cutoff_time = datetime.datetime.now() - datetime.timedelta(days=days_to_keep)
-    
-    for item in os.listdir(backup_dir):
-        item_path = os.path.join(backup_dir, item)
-        if os.path.isdir(item_path) and item.startswith('backup_'):
-            item_time_str = item.replace('backup_', '')
-            try:
-                item_time = datetime.datetime.strptime(item_time_str, '%Y%m%d_%H%M%S')
-                if item_time < cutoff_time:
-                    shutil.rmtree(item_path)
-                    print(f"删除旧备份: {item}")
-            except ValueError:
-                continue
-
-# 定时任务
-schedule.every().day.at("02:00").do(backup_files, 'important_data', 'backups')
-schedule.every().sunday.at("03:00").do(clean_old_backups, 'backups')
-
-print("自动化备份系统启动...")
-while True:
-    schedule.run_pending()
-    time.sleep(60)
+class Child(Parent):  # 子类继承父类
+    pass
 ```
 
-**4. 网络爬虫**
+### 22. 如何在 Python 中捕获异常？
+
+使用 `try-except` 结构，可选 `finally` 执行收尾代码：
+
 ```python
-import requests
-from bs4 import BeautifulSoup
-import csv
-import time
-from urllib.parse import urljoin
-
-class ProductScraper:
-    def __init__(self, base_url):
-        self.base_url = base_url
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        })
-    
-    def scrape_product_page(self, url):
-        """爬取单个产品页面"""
-        try:
-            response = self.session.get(url, timeout=10)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # 提取产品信息
-            product = {
-                'name': self._extract_text(soup, 'h1.product-title'),
-                'price': self._extract_text(soup, 'span.price'),
-                'description': self._extract_text(soup, 'div.product-description'),
-                'rating': self._extract_text(soup, 'span.rating'),
-                'url': url
-            }
-            
-            return product
-        
-        except Exception as e:
-            print(f"爬取失败 {url}: {e}")
-            return None
-    
-    def scrape_category(self, category_url):
-        """爬取整个分类"""
-        products = []
-        page = 1
-        
-        while True:
-            url = f"{category_url}?page={page}"
-            print(f"爬取第 {page} 页: {url}")
-            
-            response = self.session.get(url)
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # 提取产品链接
-            product_links = soup.select('a.product-link')
-            if not product_links:
-                break
-            
-            for link in product_links:
-                product_url = urljoin(self.base_url, link['href'])
-                product = self.scrape_product_page(product_url)
-                if product:
-                    products.append(product)
-                    time.sleep(1)  # 礼貌延迟
-            
-            page += 1
-        
-        return products
-    
-    def save_to_csv(self, products, filename):
-        """保存到CSV文件"""
-        with open(filename, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=products[0].keys())
-            writer.writeheader()
-            writer.writerows(products)
-        
-        print(f"保存了 {len(products)} 个产品到 {filename}")
-    
-    def _extract_text(self, soup, selector):
-        """辅助函数：提取文本"""
-        element = soup.select_one(selector)
-        return element.get_text(strip=True) if element else ''
-
-# 使用示例
-scraper = ProductScraper('https://example-store.com')
-products = scraper.scrape_category('https://example-store.com/electronics')
-scraper.save_to_csv(products, 'products.csv')
+try:
+    # 可能报错的代码
+    1/0
+except ZeroDivisionError:
+    # 捕获指定异常
+    print("除数不能为0")
+finally:
+    # 无论是否报错都执行
+    print("执行完毕")
 ```
 
-**5. 人工智能与机器学习**
+### 23. 你这个项目是如何使用 asyncio 实现非阻塞的
+
+1. 用 `async` 定义协程函数，`await` 挂起耗时操作（IO / 网络请求）；
+2. 事件循环调度协程，单核交替执行，**不阻塞主线程**；
+3. 用 `asyncio.run()`/`gather()` 批量运行协程，提升 IO 效率。
+
+### 25. Python 的 * args 和 **kwargs 是什么
+
+1. `*args`：接收**任意数量位置参数**，打包为元组；
+2. `**kwargs`：接收**任意数量关键字参数**，打包为字典。
+
+### 26. 请介绍 Python 的切片功能，并说明如何从正方向对一个列表倒数第二个之前的元素做切片
+
+**切片**：`列表[起始:结束:步长]`，截取序列片段，**顾头不顾尾**
+
 ```python
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader, Dataset
-import torchvision.transforms as transforms
-from PIL import Image
-import numpy as np
-
-class CustomDataset(Dataset):
-    def __init__(self, image_paths, labels, transform=None):
-        self.image_paths = image_paths
-        self.labels = labels
-        self.transform = transform
-    
-    def __len__(self):
-        return len(self.image_paths)
-    
-    def __getitem__(self, idx):
-        image = Image.open(self.image_paths[idx]).convert('RGB')
-        label = self.labels[idx]
-        
-        if self.transform:
-            image = self.transform(image)
-        
-        return image, label
-
-class CNNClassifier(nn.Module):
-    def __init__(self, num_classes):
-        super(CNNClassifier, self).__init__()
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.fc1 = nn.Linear(64 * 56 * 56, 128)
-        self.fc2 = nn.Linear(128, num_classes)
-        self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(0.5)
-    
-    def forward(self, x):
-        x = self.pool(self.relu(self.conv1(x)))
-        x = self.pool(self.relu(self.conv2(x)))
-        x = x.view(x.size(0), -1)
-        x = self.relu(self.fc1(x))
-        x = self.dropout(x)
-        x = self.fc2(x)
-        return x
-
-def train_model(model, train_loader, val_loader, num_epochs=10):
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    
-    for epoch in range(num_epochs):
-        # 训练阶段
-        model.train()
-        train_loss = 0.0
-        train_correct = 0
-        
-        for images, labels in train_loader:
-            optimizer.zero_grad()
-            outputs = model(images)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            
-            train_loss += loss.item()
-            _, predicted = torch.max(outputs, 1)
-            train_correct += (predicted == labels).sum().item()
-        
-        # 验证阶段
-        model.eval()
-        val_loss = 0.0
-        val_correct = 0
-        
-        with torch.no_grad():
-            for images, labels in val_loader:
-                outputs = model(images)
-                loss = criterion(outputs, labels)
-                val_loss += loss.item()
-                _, predicted = torch.max(outputs, 1)
-                val_correct += (predicted == labels).sum().item()
-        
-        # 打印统计信息
-        train_acc = 100 * train_correct / len(train_loader.dataset)
-        val_acc = 100 * val_correct / len(val_loader.dataset)
-        
-        print(f'Epoch {epoch+1}/{num_epochs}:')
-        print(f'  Train Loss: {train_loss/len(train_loader):.4f}, Acc: {train_acc:.2f}%')
-        print(f'  Val Loss: {val_loss/len(val_loader):.4f}, Acc: {val_acc:.2f}%')
-    
-    return model
-
-# 数据预处理
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-])
-
-# 创建模型
-model = CNNClassifier(num_classes=10)
-
-# 训练模型（示例）
-# train_model(model, train_loader, val_loader)
+lst = [1,2,3,4,5]
+res = lst[:-1]  # 结果：[1,2,3,4]
 ```
 
-**6. 桌面应用程序**
-```python
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-import sqlite3
-from datetime import datetime
+### 27. 如何在 Python 中实现多线程或多进程？
 
-class TaskManagerApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("任务管理器")
-        self.root.geometry("800x600")
-        
-        # 数据库连接
-        self.conn = sqlite3.connect('tasks.db')
-        self.create_table()
-        
-        # 创建界面
-        self.create_widgets()
-        self.load_tasks()
-    
-    def create_table(self):
-        cursor = self.conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS tasks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                description TEXT,
-                priority INTEGER DEFAULT 1,
-                due_date TEXT,
-                completed BOOLEAN DEFAULT 0,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        self.conn.commit()
-    
-    def create_widgets(self):
-        # 顶部工具栏
-        toolbar = ttk.Frame(self.root)
-        toolbar.pack(fill=tk.X, padx=5, pady=5)
-        
-        ttk.Button(toolbar, text="添加任务", command=self.add_task).pack(side=tk.LEFT, padx=2)
-        ttk.Button(toolbar, text="编辑任务", command=self.edit_task).pack(side=tk.LEFT, padx=2)
-        ttk.Button(toolbar, text="删除任务", command=self.delete_task).pack(side=tk.LEFT, padx=2)
-        ttk.Button(toolbar, text="标记完成", command=self.mark_complete).pack(side=tk.LEFT, padx=2)
-        
-        # 搜索框
-        search_frame = ttk.Frame(toolbar)
-        search_frame.pack(side=tk.RIGHT)
-        ttk.Label(search_frame, text="搜索:").pack(side=tk.LEFT)
-        self.search_var = tk.StringVar()
-        self.search_var.trace('w', self.on_search)
-        ttk.Entry(search_frame, textvariable=self.search_var, width=20).pack(side=tk.LEFT, padx=5)
-        
-        # 任务列表
-        columns = ('id', 'title', 'priority', 'due_date', 'completed')
-        self.tree = ttk.Treeview(self.root, columns=columns, show='headings', height=20)
-        
-        # 设置列标题
-        self.tree.heading('id', text='ID')
-        self.tree.heading('title', text='任务标题')
-        self.tree.heading('priority', text='优先级')
-        self.tree.heading('due_date', text='截止日期')
-        self.tree.heading('completed', text='状态')
-        
-        # 设置列宽度
-        self.tree.column('id', width=50)
-        self.tree.column('title', width=300)
-        self.tree.column('priority', width=80)
-        self.tree.column('due_date', width=100)
-        self.tree.column('completed', width=80)
-        
-        # 滚动条
-        scrollbar = ttk.Scrollbar(self.root, orient=tk.VERTICAL, command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scrollbar.set)
-        
-        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        # 双击编辑
-        self.tree.bind('<Double-1>', self.on_double_click)
-    
-    def load_tasks(self, search_text=''):
-        # 清空现有项
-        for item in self.tree.get_children():
-            self.tree.delete(item)
-        
-        # 查询数据库
-        cursor = self.conn.cursor()
-        if search_text:
-            cursor.execute('''
-                SELECT id, title, priority, due_date, completed 
-                FROM tasks 
-                WHERE title LIKE ? OR description LIKE ?
-                ORDER BY priority DESC, due_date ASC
-            ''', (f'%{search_text}%', f'%{search_text}%'))
-        else:
-            cursor.execute('''
-                SELECT id, title, priority, due_date, completed 
-                FROM tasks 
-                ORDER BY priority DESC, due_date ASC
-            ''')
-        
-        # 插入到树视图
-        for row in cursor.fetchall():
-            status = '已完成' if row[4] else '进行中'
-            self.tree.insert('', tk.END, values=(row[0], row[1], row[2], row[3], status))
-    
-    def add_task(self):
-        # 创建添加任务对话框
-        dialog = tk.Toplevel(self.root)
-        dialog.title("添加新任务")
-        dialog.geometry("400x300")
-        
-        # 表单字段
-        ttk.Label(dialog, text="任务标题:").grid(row=0, column=0, padx=10, pady=10, sticky=tk.W)
-        title_entry = ttk.Entry(dialog, width=30)
-        title_entry.grid(row=0, column=1, padx=10, pady=10)
-        
-        ttk.Label(dialog, text="描述:").grid(row=1, column=0, padx=10, pady=10, sticky=tk.W)
-        desc_text = tk.Text(dialog, width=30, height=5)
-        desc_text.grid(row=1, column=1, padx=10, pady=10)
-        
-        ttk.Label(dialog, text="优先级:").grid(row=2, column=0, padx=10, pady=10, sticky=tk.W)
-        priority_var = tk.IntVar(value=1)
-        ttk.Radiobutton(dialog, text="高", variable=priority_var, value=3).grid(row=2, column=1, sticky=tk.W)
-        ttk.Radiobutton(dialog, text="中", variable=priority_var, value=2).grid(row=3, column=1, sticky=tk.W)
-        ttk.Radiobutton(dialog, text="低", variable=priority_var, value=1).grid(row=4, column=1, sticky=tk.W)
-        
-        ttk.Label(dialog, text="截止日期:").grid(row=5, column=0, padx=10, pady=10, sticky=tk.W)
-        due_entry = ttk.Entry(dialog, width=30)
-        due_entry.grid(row=5, column=1, padx=10, pady=10)
-        due_entry.insert(0, datetime.now().strftime('%Y-%m-%d'))
-        
-        def save_task():
-            cursor = self.conn.cursor()
-            cursor.execute('''
-                INSERT INTO tasks (title, description, priority, due_date)
-                VALUES (?, ?, ?, ?)
-            ''', (
-                title_entry.get(),
+1. **多线程**：`threading` 模块
+2. **多进程**：`multiprocessing` 模块
+
+```python
+# 多线程
+import threading
+t = threading.Thread(target=函数名)
+t.start()
+
+# 多进程
+from multiprocessing import Process
+p = Process(target=函数名)
+p.start()
 ```
 
-
-
-### 18. 请简述Python多线程和多进程的区别
-### 19. 如何理解Python中的闭包（Closures）？
-### 20. 简述Python面向对象的三个特征，并说明如何用代码实现父类的继承
-### 21. Python常用的第三方库有哪些？
-### 22. 如何在Python中捕获异常？
-### 23. 你这个项目是如何使用asyncio实现非阻塞的
-### 24. 请介绍你的 Python 项目以及所使用的建模方法
-### 25. Python的*args和**kwargs是什么
-### 26. 请介绍Python的切片功能，并说明如何从正方向对一个列表倒数第二个之前的元素做切片
-### 27. 如何在Python中实现多线程或多进程？
 ### 28. 手写一个 Python 装饰器
-### 29. 简述Python的lambda语法以及常用场景
-### 30. 装饰器的作用是什么
-### 31. 请介绍一下Flask框架
-### 32. 请解释Python中的`super()`函数的作用及其在多重继承中的行为。
-### 33. Python中字典的key，什么样的对象可以作为key，什么样的不可以
-### 34. Python中的装饰器和生成器是什么？
-### 35. 简述Python 中类方法、类实例方法、静态方法有何区别？
-### 36. 请说明list和set的区别
-### 37. 请解释Python中的`__new__`方法及其与`__init__`方法的区别。
-### 38. 请说明pytorch的model.train()和model.eval()的区别
-### 39. Python中的迭代器是什么，在什么场景下需要使用迭代器
-### 40. 你熟悉哪种编程语言，是否了解Python数据分析库pandas
-### 41. 如何将 Python 列表转化为元组
-### 42. 解释Python中的静态方法和类方法。
-### 43. 请简述Python中的列表推导式和生成器表达式。
-### 44. 请说明 with 语法糖的用法，以及除了打开文件还有哪些功能
-### 45. 请说明Python中是传值还是传引用
-### 46. 请说明面向过程和面向对象编程的区别
-### 47. python的内存管理机制是怎样的，内存空间有哪些类型，堆和栈的区别是什么，如何申请堆空间
-### 48. Python 中的作用域？
-### 49. 你在 Python 开发中用过哪些常用框架？
-### 50. 描述Python中的内置函数有哪些？
-### 51. 请介绍python中全局变量和局部变量的相关内容
-### 52. 请介绍Python解释器
-### 53. 请解释Python中的魔法方法（如__init__、__str__等）。
-### 54. Python是如何实现面向对象特性的
-### 55. 请介绍Python的单例模式及其适用场景
-### 56. 请说明 pytest 参数化的方法
-### 57. 请说明requests的传递流程
-### 58. Python中元组是有序还是无序的
-### 59. 一行代码删除列表中重复的值
-### 60. 在Python中如何判断数据类型
-### 61. 请介绍python语法中的类对象
-### 62. Python内存泄漏是什么，如何解决
-### 63. 如何在Python中实现一个简单的线程？
-### 64. 请描述PyTorch的训练流程以及如何定义一个网络
-### 65. 请说明Python中class的init方法和new方法的区别
-### 66. Python 中的可变和不可变数据类型分别有哪些
-### 67. Python 是强类型语言还是弱类型语言？
-### 68. Python中如何实现函数重载？
-### 69. Python中字典是有序还是无序的
-### 70. read、readline 和 readlines 的区别？
-### 71. 什么是生成器
-### 72. 使用with open(文件名) as f打开文件有什么好处
-### 73. 在Python中，列表的切片相当于浅拷贝还是深拷贝
-### 74. 在Python中，定义函数时输入参数有带一个星号和两个星号的参数，这是什么定义，有什么含义？
-### 75. 在Python中如何判断两个对象是不是同一个
-### 76. 如何在Python中交换两个变量的值？
-### 77. 如何对Python列表进行排序和去重
-### 78. 类如何从Python中的另一个类继承？
-### 79. 解释Python中的继承和多态。
-### 80. 请解释Python中的异常处理机制。
-### 81. 谈一下什么是解释性语言，什么是编译性语言？
-### 82. Python中内存泄漏和溢出（OutOfMemoryError）的区别是什么
-### 83. Python中的dict是否是线程安全的
-### 84. Python的垃圾回收机制（标记清除）是否会处理循环引用问题
-### 85. 如何进行单元测试（Unit Testing）？
-### 86. 描述Python中的上下文管理器（Context Managers）和`with`语句的用途。
-### 87. 解释Python中的上下文管理器（Context Manager）。
-### 88. 解释什么是Python元类( meta_class )?
-### 89. 请分析Python多线程和多进程的性能问题
-### 90. 请解释装饰器的原理
-### 91. Python如何实现AOP
-### 92. Python 数据类型中哪些是无序的，哪些是有序的
-### 93. Python 迭代器和生成器的区别是什么
-### 94. Python 里的变量定义时是否需要声明数据类型
-### 95. Python 里面如何生成随机数？
-### 96. Python中数据类型不可变的原因是什么
-### 97. Python中私有属性能否被继承
-### 98. Python中类属性和对象属性的区别是什么
-### 99. range 和 xrange 的区别？
-### 100. unittest 是什么？
-### 101. 什么是 Python 的命名空间？
-### 102. 介绍Python中列表和字典这两种数据类型
-### 103. 元组适用于什么样的情况
-### 104. 简述Python中的异常处理机制，包括`try`, `except`, `else`, `finally`
-### 105. 请列举 Python 中可迭代的数据类型
-### 106. 请解释Python中的断言（assert）。
-### 107. python中的可变数据类型是如何实现的
-### 108. Python中的对象创建过程，__init__前是如何实例化self的
-### 109. 如何在Python中实现一个简单的观察者模式？
-### 110. 描述Python中的多进程通信方式（如使用`multiprocessing`模块）。
-### 111. 解释Python深拷贝的原理和使用场景
-### 112. 请介绍PyTorch计算图的概念和作用
-### 113. 请描述python这样的解释性语言的执行过程
-### 114. 请讲一下Flask的生命周期
-### 115. 读取文件时需要注意什么来提高效率
-### 116. dict 的 items() 方法与 iteritems() 方法的不同？
-### 117. lambda 表达式格式以及应用场景？
-### 118. print 调用 Python 中底层的什么方法？
-### 119. Python isinstance作用以及应用场景？
-### 120. Python 如何撤消清单？
-### 121. Python 是如何进行类型转换的？
-### 122. Python 的 sys 模块常用方法
-### 123. Python 的变量、对象以及引用？
-### 124. Python中`pass`语句的作用是什么？
-### 125. Python中OOPS是什么？
-### 126. Python中的`__call__`方法是什么？有什么用途？
-### 127. Python中的`collections`模块提供了哪些有用的数据结构？
-### 128. Python中的`map()`, `filter()`, 和 `reduce()` 函数各有什么作用
-### 129. Python中的关键字有哪些？
-### 130. Python中的函数有哪些类型？
-### 131. Python中的闭包和Lambda表达式有什么区别？
-### 132. Python如何判断是函数还是方法？
-### 133. Python支持多重继承吗？
-### 134. Python里面如何拷贝一个对象？
-### 135. Python面向对象中的继承有什么特点？
-### 136. 一行代码去除字符串间的空格
-### 137. 一行代码反转字符串
-### 138. 一行代码合并两个字典
-### 139. 一行代码实现 1 – 100 的和
-### 140. 一行代码实现字典键从小到大排序
-### 141. 一行代码实现字符串整数列表变成整数列表
-### 142. 一行代码展开列表
-### 143. 一行代码打乱列表
-### 144. 一行代码找出两个列表中相同的元素
-### 145. 一行代码找出列表中的最大值
-### 146. 一行代码查看目录下所有文件
-### 147. 一行代码求奇偶数
-### 148. 什么是Python中的`self`参数？在定义类的方法时，为什么要使用它？
-### 149. 什么是Python中的属性装饰器（property）？
-### 150. 什么是正则的贪婪匹配？
-### 151. 什么是鸭子类型（Duck Typing）？
-### 152. 介绍Python中的日志模块（Logging）。
-### 153. 介绍一下 except 的作用和用法？
-### 154. 代码中要修改不可变数据会出现什么问题？抛出什么异常？
-### 155. 你所遵循的代码规范是什么？
-### 156. 在 except 中 return 后还会不会执行 finally 中的代码？怎么抛出自定义异常？
-### 157. 在Python中，如何使用`collections.ChainMap`来合并多个字典？
-### 158. 在Python中，如何使用`datetime`模块来计算两个日期之间的天数？
-### 159. 在Python中，如何使用`zip`函数来合并两个列表并创建一个字典？
-### 160. 在Python中，如何将一个列表中的所有元素都转换为字符串？
-### 161. 在Python中，如何检测一个字符串是否只包含数字？
-### 162. 如何使用Python实现一个简单的斐波那契数列？
-### 163. 如何使用Python的`configparser`模块读取配置文件？
-### 164. 如何在Python中使用`functools.reduce`函数实现一个累加器？
-### 165. 如何在Python中使用`os`模块进行文件和目录操作？
-### 166. 如何在Python中使用枚举（Enumerations）？
-### 167. 如何在Python中创建一个类，并说明`__init__`方法的作用。
-### 168. 如何在Python中处理命令行参数？
-### 169. 如何在Python中处理日期和时间？
-### 170. 如何在Python中定义一个模块和包？它们之间有什么区别？
-### 171. 如何在Python中实现一个简单的装饰器？
-### 172. 如何在Python中实现一个简单的装饰器来计算函数运行时间？
-### 173. 如何在Python中实现一个自定义的异常类？
-### 174. 如何在Python中实现反序列化（Deserialization）？
-### 175. 如何在Python中检测一个对象是否是可调用的？
-### 176. 如何在Python中生成UUID？
-### 177. 如何在Python中读写文件？
-### 178. 如何在Python中进行JSON的序列化和反序列化？
-### 179. 如何在Python中进行字符串格式化？列出几种不同的方法。
-### 180. 如何在Python中进行错误日志记录？
-### 181. 如何理解 Python 中字符串中的\字符？
-### 182. 存入字典里的数据有没有先后排序？
-### 183. 描述Python中的正则表达式（Regular Expressions）及其用途。
-### 184. 简述Python面向对象中怎么实现只读属性？
-### 185. 简述什么是多态？
-### 186. 简述什么是封装？
-### 187. 简述什么是抽象？
-### 188. 简述用过的爬虫框架或者模块有哪些？优缺点？
-### 189. 类和对象有什么区别？
-### 190. 解释Python中__name__的作用。
-### 191. 解释Python中的类型提示（Type Hinting）。
-### 192. 解释Python中的虚拟环境（Virtual Environment）。
-### 193. 解释一下Python中的继承？
-### 194. 说一下字典和 json 的区别？
-### 195. 请描述Python中的`__slots__`属性如何帮助减少内存使用。
-### 196. 请描述Python中的`calendar`模块及其在日期处理中的应用。
-### 197. 请描述Python中的`None`类型及其在编程中的应用。
-### 198. 请简述Python的特点。
-### 199. 请简述你对 input()函数的理解？
-### 200. 请解释Python中的`__repr__`和`__str__`方法之间的区别。
-### 201. 请解释Python中的`del`语句的作用及其与垃圾回收机制的关系。
-### 202. 请解释Python中的`enum`模块及其在编程中的应用。
-### 203. 请解释Python中的`global`和`nonlocal`关键字的作用。
-### 204. 请解释Python中的`reversed`函数和`slice`对象的作用。
-### 205. 请解释Python中的封装。
-### 206. 请解释Python中的递归函数。
-### 207. 请阐述Python中的`range`对象与列表的区别。
-### 208. 请阐述Python中的`type`函数和`isinstance`函数的区别。
-### 209. 请阐述Python中的`with`语句如何管理资源清理。
-### 210. 4G 内存怎么读取一个 5G 的数据？
-### 211. Python中的`argparse`模块是如何用于命令行参数解析的？
-### 212. Python匹配HTML tag的时候，<.>和<.?>有什么区别？
-### 213. Scrapy中如何实现暂停爬虫？
-### 214. Scrapy中如何实现的记录爬虫的深度？
-### 215. Scrapy中如何进行自定制命令？
-### 216. Scrapy中的pipelines工作原理？
-### 217. Scrapy框架中各组件的工作流程？
-### 218. Scrapy框架中如何实现大文件的下载？
-### 219. Scrapy的pipelines如何丢弃一个item对象？
-### 220. 一行代码实现 9 * 9 乘法表
-### 221. 一行代码找出两个列表中不同的元素
-### 222. 关于 Python 程序的运行方面，有什么手段能提升性能？
-### 223. 写爬虫是用多进程好？还是多线程好？
-### 224. 列举Python面向对象中的特殊成员以及应用场景？
-### 225. 图片、视频爬取怎么绕过防盗连接？
-### 226. 在Python中，如何使用`itertools`模块来找到两个列表中的公共元素？
-### 227. 在Python中，如何使用`sqlite3`模块来创建和操作一个简单的SQLite数据库？
-### 228. 在Python中，如何实现一个简单的广度优先搜索算法？
-### 229. 在Python中，如何实现一个简单的线程池？
-### 230. 在Python中，如何实现一个简单的进度条？
-### 231. 在Python中，如何高效地拼接大量的字符串？
-### 232. 如何使用Python的`multiprocessing`模块中的`Pool`类来并行执行函数？
-### 233. 如何在Python中使用正则表达式匹配一个字符串中的所有重复单词？
-### 234. 如何在Python中使用装饰器来检查函数的输入参数类型？
-### 235. 如何在Python中创建一个不可变的数据类型，例如不可变字典？
-### 236. 如何在Python中处理异常链？
-### 237. 如何在Python中实现一个简单的单例模式，并确保它是线程安全的？
-### 238. 如何在Python中实现一个简单的命令行参数解析器？
-### 239. 如何在Python中实现一个简单的定时任务？
-### 240. 如何在Python中实现一个简单的工厂模式？
-### 241. 如何在Python中实现一个简单的深度优先搜索算法？
-### 242. 如何在Python中实现装饰器链（Chained Decorators）？
-### 243. 如何在Python中实现链表（Linked List）？
-### 244. 如何在Python中进行网络编程？
-### 245. 如何在Scrapy框架中如何设置代理（两种方法）？
-### 246. 如何实现Python中的反射（Reflection）？
-### 247. 如何开启增量爬取？
-### 248. 描述Python中的事件驱动编程（Event-driven Programming）。
-### 249. 描述Python中的数据序列化和反序列化。
-### 250. 描述下Scrapy框架运行的机制？
-### 251. 数据爬虫后的数据是怎么存储？
-### 252. 是否使用过functools中的函数？其作用是什么？
-### 253. 爬取下来的数据如何去重，说一下scrapy的具体的算法依据？
-### 254. 爬虫 Cookie过期的处理问题？
-### 255. 简述Python中面向切面编程AOP和装饰器？
-### 256. 简述你对Scrapy的理解？
-### 257. 简述常见的反爬虫和应对方法？
-### 258. 解释Python中的asyncio模块及其用途。
-### 259. 解释Python中的多继承及其MRO（方法解析顺序）。
-### 260. 解释Python中的猴子补丁（Monkey Patching）是什么，以及何时应该避免使用它。
-### 261. 解释Python中的生成器表达式（Generator Expression）。
-### 262. 解释Python中的装饰器工厂（Decorator Factories）及其用途。
-### 263. 解释一下Python中的协程（Coroutines）和异步编程（Async IO）。
-### 264. 请描述Python中的`async`和`await`关键字的作用及其在异步编程中的应用。
-### 265. 请描述Python中的`weakref`模块及其在避免内存泄漏中的应用。
-### 266. 请描述Python中的函数是一等对象的概念，并给出一个实际应用的例子。
-### 267. 请解释Python中的`argparse`模块提供的功能及其在命令行工具开发中的应用。
-### 268. 请解释Python中的`html.parser`模块及其在解析HTML文档中的应用。
-### 269. 请解释Python中的`sched`模块及其在调度任务中的应用。
-### 270. 请解释Python中的`staticmethod`和`classmethod`在继承中的行为差异。
-### 271. 请解释Python中的Pandas库的基本使用。
-### 272. 请解释Python中的函数式编程。
-### 273. 请解释Python中的描述符（descriptor）。
-### 274. 请解释Python中的数据封装和抽象。
-### 275. 请解释Python中的线程同步机制。
-### 276. 请阐述Python中的`operator`模块提供的功能及其在函数式编程中的应用。
-### 277. 请阐述Python中的`xml.etree.ElementTree`模块提供的功能及其在处理XML数据中的应用。
-### 278. 输入某年某月某日，判断这一天是这一年的第几天？
-### 279. 阐述Python中重载和重写？
-### 280. 阐述Scrapy的优缺点?
-### 281. 面向对象深度优先和广度优先是什么？
-### 282. 如何在Python中实现一个简单的HTML解析器？
-### 283. 数据爬虫中遇到验证码的解决?
-### 284. 爬虫过程中"极验"滑动验证码如何破解？
 
-## 分类整理
+```python
+def decorator(func):
+    def wrapper():
+        print("执行前")
+        func()
+        print("执行后")
+    return wrapper
+
+@decorator
+def test():
+    print("原函数")
+```
+
+### 29. 简述 Python 的 lambda 语法以及常用场景
+
+**语法**：`lambda 参数: 表达式`，单行匿名函数
+
+**常用场景**：排序、map/filter 高阶函数、简单逻辑处理。
+
+### 30. 装饰器的作用是什么
+
+**不修改原函数代码**，动态添加功能（日志、计时、权限校验、缓存）。
+
+### 31. 请介绍一下 Flask 框架
+
+轻量级 Python Web 框架，**极简、灵活、易扩展**，自带路由、模板引擎，适合小型项目 / API 开发，搭配插件可实现完整 Web 功能。
+
+### 32. 请解释 Python 中的`super()`函数的作用及其在多重继承中的行为
+
+**作用**：调用父类方法，避免硬编码；
+
+**多重继承**：按**MRO 方法解析顺序**依次调用父类方法。
+
+### 33. Python 中字典的 key，什么样的对象可以作为 key，什么样的不可以
+
+**可以**：**不可变对象**（数字、字符串、元组、布尔值）；
+
+**不可以**：**可变对象**（列表、字典、集合）。
+
+### 34. Python 中的装饰器和生成器是什么？
+
+**装饰器**：高阶函数，**不修改原函数代码**为其动态添加功能（日志、计时），基于闭包实现。
+
+**生成器**：一边循环一边计算的惰性序列，用`yield`返回数据，**节省内存**。
+
+### 35. 简述 Python 中类方法、类实例方法、静态方法有何区别？
+
+1. **实例方法**：默认`self`参数，只能**实例调用**，访问实例属性；
+2. **类方法**：`@classmethod`装饰，默认`cls`参数，**类 / 实例均可调用**，访问类属性；
+3. **静态方法**：`@staticmethod`装饰，无默认参数，**类 / 实例均可调用**，不能访问类 / 实例属性。
+
+### 36. 请说明 list 和 set 的区别
+
+1. **list**：有序、可重复、可索引、可修改，用`[]`；
+2. **set**：无序、**不可重复**、无索引、自动去重，用`{}`，适合去重 / 交集并集。
+
+### 37. 请解释 Python 中的`__new__`方法及其与`__init__`方法的区别。
+
+1. `__new__`：**创建对象**，分配内存，返回实例，是静态方法；
+2. `__init__`：**初始化对象**，给实例赋值，无返回值；
+3. 执行顺序：先`__new__`，后`__init__`。
+
+### 38. 请说明 pytorch 的 model.train () 和 model.eval () 的区别
+
+1. `model.train()`：**训练模式**，启用 Dropout、BatchNorm 归一化等训练层；
+2. `model.eval()`：**验证 / 测试模式**，关闭 Dropout，BatchNorm 使用固定均值方差。
+
+### 39. Python 中的迭代器是什么，在什么场景下需要使用迭代器
+
+**迭代器**：实现`__iter__()`和`__next__()`的对象，**惰性取值**，一次取一个数据。
+
+**场景**：大数据量 / 无限序列，节省内存，避免一次性加载所有数据。
+
+### 40. 你熟悉哪种编程语言，是否了解 Python 数据分析库 pandas
+
+熟悉**Python**，熟练使用 pandas；
+
+pandas 是 Python 数据分析核心库，提供`DataFrame/Series`数据结构，用于数据清洗、筛选、统计、表格处理。
+
+### 41. 如何将 Python 列表转化为元组
+
+```python
+lst = [1,2,3]
+t = tuple(lst)  # 结果 (1,2,3)
+```
+
+### 42. 解释 Python 中的静态方法和类方法。
+
+**类方法**：`@classmethod`，默认`cls`，可访问 / 修改类属性，类和实例都能调用；
+
+**静态方法**：`@staticmethod`，无默认参数，**不能访问类 / 实例属性**，只是类中的普通函数。
+
+### 43. 请简述 Python 中的列表推导式和生成器表达式。
+
+1. **列表推导式**：`[x for x in lst]`，**立即创建完整列表**，占内存；
+2. **生成器表达式**：`(x for x in lst)`，**惰性计算**，用一个算一个，省内存。
+
+### 44. 请说明 with 语法糖的用法，以及除了打开文件还有哪些功能
+
+**用法**：`with ... as ...`，自动管理上下文，**自动关闭资源**，无需手动`close`。
+
+**其他功能**：线程锁、数据库连接、socket 连接、文件加锁、临时环境。
+
+### 45. 请说明 Python 中是传值还是传引用
+
+Python 是**传对象引用**：
+
+- 不可变对象（数字 / 字符串 / 元组）：类似传值，函数内修改不影响外部；
+- 可变对象（列表 / 字典/集合）：类似传引用，函数内修改会影响外部。
+
+### 46. 请说明面向过程和面向对象编程的区别
+
+1. **面向过程**：以**步骤 / 函数**为核心，按流程执行，适合简单逻辑；
+2. **面向对象**：以**对象 / 类**为核心，封装数据和方法，可复用、易维护，适合复杂项目。
+
+### 47. python 的内存管理机制是怎样的，内存空间有哪些类型，堆和栈的区别是什么，如何申请堆空间
+
+1. **内存管理**：引用计数为主 + 分代回收 + 标记清除，自动回收垃圾；
+2. **空间类型**：栈内存（临时变量 / 引用）、堆内存（存储对象数据）；
+3. **堆 vs 栈**：栈自动分配释放、速度快、空间小；堆手动管理、速度慢、空间大；
+4. **申请堆**：创建对象（列表 / 字典 / 实例）时**自动在堆上分配**，无需手动申请。
+
+### 48. Python 中的作用域？
+
+1. **L（Local）**：局部作用域，函数内
+2. **E（Enclosing）**：嵌套函数外层作用域
+3. **G（Global）**：全局作用域，模块顶层
+4. **B（Built-in）**：内置作用域，Python 内置函数 / 类
+
+### 49. 你在 Python 开发中用过哪些常用框架？
+
+1. Web：Flask、Django、FastAPI
+2. 爬虫：Scrapy
+3. 数据分析 / AI：Pandas、NumPy、PyTorch
+4. 自动化：Selenium
+
+### 50. 描述 Python 中的内置函数有哪些？
+
+常用：`print()`、`len()`、`type()`、`range()`、`sum()`、`max()`、`min()`、`sorted()`、`map()`、`filter()`、`zip()`、`open()`、`input()`、`list()`、`dict()`、`set()`、`tuple()`
+
+### 51. 请介绍 python 中全局变量和局部变量的相关内容
+
+1. **全局变量**：定义在函数外，整个模块可用，函数内修改需加`global`
+2. **局部变量**：定义在函数内，仅函数内可用，函数执行完销毁
+3. 访问优先级：局部 > 全局
+
+### 52. 请介绍 Python 解释器
+
+Python 解释器是**执行 Python 代码的程序**，将.py 代码逐行翻译为机器码运行；
+
+常用：CPython（官方 C 语言实现）、PyPy（JIT 加速）、IronPython、Jython
+
+### 53. 请解释 Python 中的魔法方法（如__init__、__str__等）
+
+以`__xx__`命名的内置方法，用于**自定义类的行为**：
+
+- `__init__`：初始化实例
+- `__str__`：打印对象时输出字符串
+- `__new__`：创建对象
+- `__len__`：支持`len()`
+- `__call__`：让对象可调用
+
+### 54. Python 是如何实现面向对象特性的
+
+通过 ** 类（class）**和**对象（instance）** 实现：
+
+- 封装：属性 + 方法绑定
+- 继承：子类继承父类
+- 多态：不同对象执行同名方法表现不同
+
+### 55. 请介绍 Python 的单例模式及其适用场景
+
+**单例模式**：一个类只能创建**唯一实例**；
+
+实现：重写`__new__`、装饰器、模块导入；
+
+场景：数据库连接、日志对象、配置管理、线程池
+
+### 57. 请说明 requests 的传递流程
+
+1. 调用`requests.get/post()`
+2. 构建请求头、参数、请求体
+3. 建立 TCP 连接，发送 HTTP 请求
+4. 服务器处理并返回响应
+5. 解析响应，生成`Response`对象返回
+
+### 58. Python 中元组是有序还是无序的
+
+**元组是有序的**，支持索引、切片，元素顺序固定
+
+### 59. 一行代码删除列表中重复的值
+
+```python
+lst = list(set(lst))  # 去重（无序）
+# 保持顺序去重
+lst = sorted(list(set(lst)), key=lst.index)
+```
+
+### 60. 在 Python 中如何判断数据类型
+
+- `type()`：返回**精确类型**
+- `isinstance()`：判断**继承关系**（推荐）
+
+```python
+type(1) == int
+isinstance(1, int)
+```
+
+### 61. 请介绍 python 语法中的类对象
+
+**类对象**：由`class`定义的对象，包含**属性和方法**；
+
+实例对象：类实例化后的具体对象，可调用类中方法
+
+### 62. Python 内存泄漏是什么，如何解决
+
+**内存泄漏**：无用对象未被 GC 回收，内存持续占用；
+
+原因：循环引用、全局对象、缓存未清理、第三方库；
+
+解决：手动解除引用、使用弱引用`weakref`、优化 GC、及时关闭资源
+
+### 63. 如何在 Python 中实现一个简单的线程？
+
+```python
+import threading
+def task(): print("线程运行")
+t = threading.Thread(target=task)
+t.start()
+```
+
+### 67. Python 是强类型语言还是弱类型语言？
+
+**强类型语言**：不允许隐式类型转换（如字符串 + 数字报错）
+
+### 68. Python 中如何实现函数重载？
+
+1. 参数默认值
+2. *args
+3. **kwargs
+
+### 69. Python 中字典是有序还是无序的
+
+- Python3.7+：**有序**（保留插入顺序）
+- 3.7 以下：无序
+
+### 70. read、readline 和 readlines 的区别？
+
+- `read()`：一次性读取**全部内容**，返回字符串
+- `readline()`：逐行读取，每次读**一行**
+- `readlines()`：读取所有行，返回**列表**
+
+### 77. 如何对 Python 列表进行排序和去重
+
+- 去重：`list(set(lst))` 或 保持顺序：`list(dict.fromkeys(lst))`
+- 排序：`lst.sort()`（原地）、`sorted(lst)`（新列表）
+
+### 78. 类如何从 Python 中的另一个类继承？
+
+```python
+class Parent: pass
+class Child(Parent): pass  # 子类继承父类
+```
+
+### 80. 请解释 Python 中的异常处理机制
+
+使用`try-except-else-finally`捕获处理异常，避免程序崩溃：
+
+- `try`：检测异常代码
+- `except`：捕获并处理异常
+- `else`：无异常时执行
+- `finally`：始终执行（资源释放）
+
+### 81. 谈一下什么是解释性语言，什么是编译性语言？
+
+- **编译性语言**：代码一次性编译成机器码，运行快（C/C++、Go）
+- **解释性语言**：代码逐行解释执行，跨平台、运行慢（Python、JS、PHP）
+
+### 82. Python 中内存泄漏和溢出（OutOfMemoryError）的区别是什么
+
+**内存泄漏**：无用对象无法被 GC 回收，长期占用内存，**缓慢消耗资源**
+
+**内存溢出**：程序申请内存超过系统可用内存，**直接报错崩溃**
+
+### 83. Python 中的 dict 是否是线程安全的
+
+**不是线程安全**；多线程同时修改会导致数据错乱，需加`threading.Lock`
+
+### 84. Python 的垃圾回收机制（标记清除）是否会处理循环引用问题
+
+**会**；标记清除算法专门解决**循环引用**导致的内存无法回收问题
+
+### 86. 描述 Python 中的上下文管理器（Context Managers）和`with`语句的用途
+
+**上下文管理器**：实现`__enter__`和`__exit__`的对象
+
+**with 用途**：自动管理资源，**自动开启 / 释放**，无需手动 close，安全简洁
+
+### 88. 解释什么是 Python 元类 (meta_class)?
+
+元类是**创建类的类**；控制类的创建行为，默认元类是`type`，用于 ORM / 框架底层
+
+### 89. 请分析 Python 多线程和多进程的性能问题
+
+**多线程**：受 GIL 限制，**CPU 密集型性能差**，IO 密集型高效
+
+**多进程**：无 GIL，**CPU 密集型性能高**，但创建成本高、通信开销大
+
+### 90. 请解释装饰器的原理
+
+基于**闭包 + 高阶函数**；接收函数作为参数，返回包装函数，不修改原代码动态增强功能
+
+### 92. Python 数据类型中哪些是无序的，哪些是有序的
+
+**有序**：list、tuple、str、set(Python3.7+)
+
+**无序**：set、dict (3.7 前)
+
+### 94. Python 里的变量定义时是否需要声明数据类型
+
+**不需要**；Python 是动态类型语言，**变量类型由赋值对象决定**
+
+### 95. Python 里面如何生成随机数？
+
+用`random`模块：
+
+```python
+import random
+random.random()   # 0-1浮点数
+random.randint(1,10) # 1-10整数
+```
+
+### 96. Python 中数据类型不可变的原因是什么
+
+不可变对象（str/int/tuple）**值不可修改**，修改会创建新对象；保证哈希稳定，可做字典 key，线程安全
+
+### 97. Python 中私有属性能否被继承
+
+**能继承，但无法直接访问**；Python 会改名`_类名__属性`实现伪私有
+
+### 98. Python 中类属性和对象属性的区别是什么
+
+**类属性**：属于类，所有实例共享，类 / 实例均可访问
+
+**对象属性**：属于实例，每个实例独立，只能实例访问
+
+### 101. 什么是 Python 的命名空间？
+
+**名称到对象的映射**，存储变量 / 函数名，避免命名冲突，分局部 / 全局 / 内置命名空间
+
+### 102. 介绍 Python 中列表和字典这两种数据类型
+
+**list**：有序可变序列，索引访问，`[]`
+
+**dict**：键值对存储，3.7 + 有序，key 查询极快，`{}`
+
+### 103. 元组适用于什么样的情况
+
+数据**不可修改**、函数返回多个值、做字典 key、函数参数、数据安全场景
+
+### 104. 简述 Python 中的异常处理机制，包括`try`, `except`, `else`, `finally`
+
+`try`：检测异常
+
+`except`：捕获处理异常
+
+`else`：无异常执行
+
+`finally`：无论是否异常都执行（释放资源）
+
+### 105. 请列举 Python 中可迭代的数据类型
+
+list、tuple、str、dict、set、生成器、迭代器
+
+### 106. 请解释 Python 中的断言（assert）。
+
+`assert 条件, 错误信息`；条件为 False 抛出`AssertionError`，用于调试 / 校验参数
+
+### 107. python 中的可变数据类型是如何实现的
+
+底层引用**堆内存地址**，修改时不改变引用，直接修改堆中数据（list/dict/set）
+
+### 109. 如何在 Python 中实现一个简单的观察者模式？
+
+```python
+class Observer:
+    def update(self): print("更新")
+class Subject:
+    def __init__(self): self.observers=[]
+    def notify(self): [o.update() for o in self.observers]
+```
+
+### 110. 描述 Python 中的多进程通信方式（如使用`multiprocessing`模块）。
+
+`Queue`、`Pipe`、`Manager`、共享内存，实现进程间数据传递
+
+### 111. 解释 Python 深拷贝的原理和使用场景
+
+**深拷贝**：`copy.deepcopy()`，递归复制所有层级对象，**完全独立**
+
+**场景**：嵌套对象、需完全独立副本
+
+### 113. 请描述 python 这样的解释性语言的执行过程
+
+.py 代码→词法 / 语法分析→生成字节码 (.pyc)→**解释器逐行执行字节码**→机器码运行
+
+### 115. 读取文件时需要注意什么来提高效率
+
+大文件**逐行读取**，不用`read()`全量加载；使用`with`自动关闭；指定缓冲区大小
+
+### 116. dict 的 items () 方法与 iteritems () 方法的不同？
+
+`items()`：返回**列表**，占内存
+
+`iteritems()`：Python2 返回**迭代器**，Python3 废弃，统一用`items()`
+
+### 118. print 调用 Python 中底层的什么方法？
+
+调用`sys.stdout.write()`，底层是文件写入方法
+
+### 121. Python 是如何进行类型转换的？
+
+内置函数强制转换：`int()`/`float()`/`str()`/`list()`/`tuple()`，自动隐式转换（数字运算）
+
+### 123. Python 的变量、对象以及引用？
+
+**对象**：内存中实际数据
+
+**引用**：变量指向对象的地址
+
+**变量**：引用的名称，无类型，对象才有类型
+
+### 124. Python 中`pass`语句的作用是什么
+
+**空语句**，占位符，不执行任何操作，保证语法完整
+
+### 125. Python 中 OOPS 是什么？
+
+**面向对象编程（OOP）**，以类 / 对象为核心，封装、继承、多态
+
+### 126. Python 中的`__call__`方法是什么？有什么用途？
+
+让**实例对象可像函数一样调用**，`obj()`等价于`obj.__call__()`
+
+### 127. Python 中的`collections`模块提供了哪些有用的数据结构？
+
+`OrderedDict`、`defaultdict`、`Counter`、`deque`、`namedtuple`
+
+### 128. Python 中的`map()`, `filter()`, 和 `reduce()` 函数各有什么作用
+
+`map(list,func)`：映射，对每个元素执行函数
+
+`filter(func,list)`：过滤，保留符合条件元素
+
+`reduce(func,list)`：累积，对序列归约计算
+
+### 129. Python 中的关键字有哪些？
+
+`if/else/for/while/def/class/return/import/from/break/continue/try/except/finally/True/False/None`等
+
+### 130. Python 中的函数有哪些类型？
+
+普通函数、匿名函数 (lambda)、递归函数、高阶函数、闭包、装饰器
+
+### 131. Python 中的闭包和 Lambda 表达式有什么区别？
+
+Lambda：**单行匿名**，简单逻辑
+
+闭包：**嵌套函数**，引用外部变量，复杂逻辑，延长变量生命周期
+
+### 132. Python 如何判断是函数还是方法？
+
+**函数**：独立定义
+
+**方法**：类 / 实例中定义，通过对象调用
+
+### 134. Python 里面如何拷贝一个对象？
+
+浅拷贝：`copy.copy()`、`lst[:]`、`dict.copy()`
+
+深拷贝：`copy.deepcopy()`
+
+### 135. Python 面向对象中的继承有什么特点？
+
+支持**单 / 多重继承**，子类复用父类方法，可重写，`super()`调用父类
+
+### 136. 一行代码去除字符串间的空格
+
+```py
+s = s.replace(" ", "")
+```
+
+### 137. 一行代码反转字符串
+
+```
+s = s[::-1]
+```
+
+### 138. 一行代码合并两个字典
+
+```python
+a = {'a':1}
+b = {'b':2}
+# 一行代码合并两个字典 |符号
+c = a | b
+```
+
+### 139. 一行代码实现 1 – 100 的和
+
+```py
+sum(range(1,101))
+```
+
+### 140. 一行代码实现字典键从小到大排序
+
+```python
+sorted(dict.items())
+```
+
+### 141. 一行代码实现字符串整数列表变成整数列表
+
+```python
+new_lst = [int(i) for i in str_lst]
+```
+
+### 142. 一行代码展开列表
+
+```python
+flat = [j for i in nested for j in i]
+```
+
+### 143. 一行代码打乱列表
+
+```python
+import random; random.shuffle(lst)
+```
+
+### 144. 一行代码找出两个列表中相同的元素
+
+```python
+set(lst1) & set(lst2)
+```
+
+### 145. 一行代码找出列表中的最大值
+
+```python
+max(lst)
+```
+
+### 146. 一行代码查看目录下所有文件
+
+```python
+import os; files = os.listdir('.')
+```
+
+### 147. 一行代码求奇偶数
+
+```python
+odd = [x for x in lst if x%2!=0]; even = [x for x in lst if x%2==0]
+```
+
+
+
+### 149. 什么是 Python 中的属性装饰器（property）？
+
+`@property`将**方法变成属性调用**，实现只读、属性校验，替代 get/set 方法。
+
+### 150. 什么是正则的贪婪匹配？
+
+**尽可能匹配最长字符串**，默认模式；非贪婪加`?`，匹配最短。
+
+### 151. 什么是鸭子类型（Duck Typing）？
+
+不关注对象类型，只关注**行为 / 方法**；只要有对应方法就可使用，无需继承。
+
+### 152. 介绍 Python 中的日志模块（Logging）。
+
+标准日志库，支持**debug/info/warn/error/critical**级别，可输出到文件 / 控制台，替代 print。
+
+### 153. 介绍一下 except 的作用和用法？
+
+捕获`try`中异常，**避免程序崩溃**；可指定异常类型，捕获后处理。
+
+### 154. 代码中要修改不可变数据会出现什么问题？抛出什么异常？
+
+不可直接修改，修改会创建新对象；
+
+强行修改（如 tuple 元素）抛出**TypeError**。
+
+### 155. 你所遵循的代码规范是什么？
+
+PEP8 规范：缩进 4 空格、命名清晰、注释适当、行宽≤80、导入排序、空行分隔。
+
+### 156. 在 except 中 return 后还会不会执行 finally 中的代码？怎么抛出自定义异常？
+
+**一定会执行 finally**；
+
+自定义异常：`class MyError(Exception): pass`，抛出用`raise MyError("msg")`。
+
+### 157. 在 Python 中，如何使用`collections.ChainMap`来合并多个字典
+
+```python
+from collections import ChainMap
+cm = ChainMap(dict1, dict2)  # 逻辑合并，不创建新字典
+```
+
+### 158. 在 Python 中，如何使用`datetime`模块来计算两个日期之间的天数？
+
+```python
+from datetime import date
+days = (date(2025,1,1) - date(2024,1,1)).days
+```
+
+### 159. 在 Python 中，如何使用`zip`函数来合并两个列表并创建一个字典？
+
+```python
+keys = ['a','b']
+vals = [1,2]
+d = dict(zip(keys, vals))
+```
+
+
+
+### 161. 在 Python 中，如何检测一个字符串是否只包含数字？
+
+```
+s.isdigit()
+```
+
+### 162. 如何使用 Python 实现一个简单的斐波那契数列？
+
+```python
+def fib(n):
+    a,b = 0,1
+    for _ in range(n):
+        yield a
+        a,b = b,a+b
+```
+
+### 163. 如何使用 Python 的`configparser`模块读取配置文件？
+
+```python
+import configparser
+cf = configparser.ConfigParser()
+cf.read('config.ini')
+val = cf.get('section', 'key')
+```
+
+### 164. 如何在 Python 中使用`functools.reduce`函数实现一个累加器？
+
+```
+from functools import reduce
+res = reduce(lambda x,y:x+y, lst)
+```
+
+### 165. 如何在 Python 中使用`os`模块进行文件和目录操作？
+
+创建、删除、重命名、查看路径、遍历目录：`os.mkdir()`/`os.remove()`/`os.listdir()`
+
+### 166. 如何在 Python 中使用枚举（Enumerations）？
+
+```python
+from enum import Enum
+class Color(Enum):
+    RED = 1
+```
+
+### 169. 如何在 Python 中处理日期和时间？
+
+`datetime`、`time`模块，格式化、时间差、时间戳。
+
+### 170. 如何在 Python 中定义一个模块和包？它们之间有什么区别？
+
+**模块**：单个`.py`文件；
+
+**包**：含`__init__.py`的文件夹，管理多个模块。
+
+### 171. 如何在 Python 中实现一个简单的装饰器？
+
+```python
+def dec(func):
+    def wrap(): func()
+    return wrap
+```
+
+### 172. 如何在 Python 中实现一个简单的装饰器来计算函数运行时间？
+
+```python
+import time
+def timer(func):
+    def wrap():
+        s = time.time()
+        func()
+        print(time.time()-s)
+    return wrap
+```
+
+### 173. 如何在 Python 中实现一个自定义的异常类？
+
+```
+class MyErr(Exception):
+    pass
+```
+
+### 174. 如何在 Python 中实现反序列化（Deserialization）？
+
+`pickle.loads()`、`json.loads()`，字符串 / 字节→对象。
+
+### 175. 如何在 Python 中检测一个对象是否是可调用的？
+
+```python
+callable(obj)
+```
+
+### 176. 如何在 Python 中生成 UUID？
+
+```python
+import uuid
+u = uuid.uuid4()
+```
+
+### 177. 如何在 Python 中读写文件？
+
+```python
+with open('a.txt','w') as f: f.write('')
+```
+
+### 178. 如何在 Python 中进行 JSON 的序列化和反序列化？
+
+```python
+import json
+json.dumps(obj)  # 序列化
+json.loads(s)    # 反序列化
+```
+
+### 179. 如何在 Python 中进行字符串格式化？列出几种不同的方法。
+
+`%`、`str.format()`、`f-string`（推荐）。
+
+### 180. 如何在 Python 中进行错误日志记录？
+
+`logging.error()`/`logging.exception()`记录异常信息。
+
+### 181. 如何理解 Python 中字符串中的 \ 字符？
+
+**转义字符**，如`\n`换行、`\t`制表符，加`r`表示原生字符串。
+
+### 182. 存入字典里的数据有没有先后排序？
+
+Python3.7+**有序**（保留插入顺序），3.7 以下无序。
+
+### 183. 描述 Python 中的正则表达式（Regular Expressions）及其用途。
+
+字符串匹配规则，`re`模块实现；用于匹配、查找、替换、校验。
+
+### 184. 简述 Python 面向对象中怎么实现只读属性？
+
+`@property`、私有属性 + get 方法、重写`__setattr__`。
+
+### 187. 简述什么是抽象？
+
+隐藏实现细节，只暴露接口；Python 用`abc`模块实现抽象类。
+
+### 190. 解释 Python 中`__name__`的作用。
+
+标识模块运行环境：直接运行`__name__ == '__main__'`，导入则为模块名。
+
+### 191. 解释 Python 中的类型提示（Type Hinting）。
+
+指定变量 / 函数参数返回值类型，如`def add(a:int) -> int`，提升可读性。
+
+### 192. 解释 Python 中的虚拟环境（Virtual Environment）。
+
+隔离项目依赖，避免版本冲突，`venv`/`conda`创建。
+
+### 194. 说一下字典和 json 的区别
+
+字典是 Python 数据类型；
+
+JSON 是**字符串格式**，键双引号、无单引号、无 Python 类型。
+
+### 197. 请描述 Python 中的`None`类型及其在编程中的应用。
+
+空值、空对象；用于默认值、占位、判断空、函数无返回值。
+
+### 198. 请简述 Python 的特点。
+
+简洁、易读、跨平台、开源、库丰富、解释型、动态类型。
+
+### 199. 请简述你对 input () 函数的理解？
+
+控制台输入，**返回字符串**，需手动转换类型。
+
+### 201. 请解释 Python 中的`del`语句的作用及其与垃圾回收机制的关系。
+
+删除引用 / 变量 / 元素，**减少引用计数**；计数为 0 时 GC 自动回收。
+
+### 202. 请解释 Python 中的`enum`模块及其在编程中的应用
+
+`enum`是枚举模块，用于定义**符号化常量**；
+
+作用：提高代码可读性，避免魔法数字，用于状态、类型、选项定义。
+
+### 203. 请解释 Python 中的`global`和`nonlocal`关键字的作用
+
+- `global`：在函数内**修改全局变量**
+- `nonlocal`：在嵌套函数内**修改外层函数变量**
+
+### 204. 请解释 Python 中的`reversed`函数和`slice`对象的作用
+
+- `reversed(seq)`：返回序列的**反向迭代器**
+- `slice(start,end,step)`：创建切片对象，统一管理切片规则
+
+### 205. 请解释 Python 中的封装
+
+将**属性和方法打包到类中**，隐藏内部实现，通过公开接口访问，保护数据安全。
+
+### 206. 请解释 Python 中的递归函数
+
+函数**调用自身**的函数，需设置终止条件；用于阶乘、遍历、树结构等。
+
+### 207. 请阐述 Python 中的`range`对象与列表的区别
+
+- `range`：**惰性序列**，不占内存，只存起止步长
+- `list`：**完整序列**，一次性加载所有元素，占内存
+
+
+
+### 209. 请阐述 Python 中的`with`语句如何管理资源清理
+
+`with`会自动调用上下文管理器的`__enter__`和`__exit__`方法；
+
+无论是否异常，**自动关闭 / 释放资源**（文件、锁、连接）。
+
+### 212. Python 匹配 HTML tag 的时候，`<.>`和`<.?>`有什么区别？
+
+- `<.>`：**贪婪匹配**，匹配最长内容
+- `<.?>`：**非贪婪匹配**，匹配最短内容
+
+### 220. 一行代码实现 9×9 乘法表
+
+```python
+print('\n'.join([' '.join([f'{i}×{j}={i*j}' for j in range(1,i+1)]) for i in range(1,10)]))
+```
+
+### 221. 一行代码找出两个列表中不同的元素
+
+```python
+# 疑惑
+set(lst1) ^ set(lst2)
+```
+
+### 222. 关于 Python 程序的运行方面，有什么手段能提升性能？
+
+- 用生成器 / 迭代器节省内存
+- 用 PyPy 加速
+- 避免循环嵌套
+- 使用内置函数
+- 多进程处理 CPU 密集任务
+- 缓存重复计算结果
+
+### 223. 写爬虫是用多进程好？还是多线程好？
+
+**多线程 / 协程**更好；爬虫是 IO 密集型，线程 / 协程开销小，效率更高。
+
+### 224. 列举 Python 面向对象中的特殊成员以及应用场景？
+
+`__init__`初始化、`__str__`打印、`__new__`创建实例、`__call__`可调用对象、`__len__`长度、`__getattr__`属性访问。
+
+### 225. 图片、视频爬取怎么绕过防盗连接？
+
+在请求头加`Referer`、`User-Agent`，使用`session`保持 cookie。
+
+### 226. 在 Python 中，如何使用`itertools`模块来找到两个列表中的公共元素？
+
+```python
+from itertools import filterfalse; common = set(lst1) & set(lst2)
+```
+
+### 227. 在 Python 中，如何使用`sqlite3`模块来创建和操作 SQLite 数据库？
+
+连接→创建游标→执行 SQL→提交→关闭。
+
+### 228. 在 Python 中，如何实现一个简单的广度优先搜索算法？
+
+用**队列**，逐层遍历，先进先出。
+
+### 229. 在 Python 中，如何实现一个简单的线程池？
+
+用`concurrent.futures.ThreadPoolExecutor`。
+
+### 230. 在 Python 中，如何实现一个简单的进度条？
+
+```python
+from tqdm import tqdm; for i in tqdm(range(100)): pass
+```
+
+### 231. 在 Python 中，如何高效地拼接大量的字符串？
+
+**放入列表最后`join`**，避免字符串`+=`（多次创建对象）。
+
+### 232. 如何使用 Python 的`multiprocessing.Pool`并行执行函数？
+
+创建进程池→`map/apply`执行函数→关闭。
+
+### 233. 如何用正则匹配字符串中的所有重复单词？
+
+```python
+import re; re.findall(r'\b(\w+)\b(?=.*\b\1\b)', s)
+```
+
+### 234. 如何用装饰器检查函数输入参数类型？
+
+装饰器内获取参数类型，与预期对比，不匹配抛异常。
+
+### 235. 如何创建不可变字典？
+
+使用`types.MappingProxyType`。
+
+### 236. 如何处理异常链？
+
+用`raise ... from`显式链接异常，保留完整堆栈。
+
+### 237. 如何实现线程安全的单例模式？
+
+加**线程锁**，确保多线程下只创建一个实例。
+
+### 238. 如何实现简单命令行参数解析？
+
+`sys.argv`手动解析或`argparse`自动解析。
+
+### 239. 如何实现简单定时任务？
+
+`time.sleep`循环、`schedule`模块。
+
+### 240. 如何实现简单工厂模式？
+
+工厂函数根据参数返回不同类实例。
+
+### 241. 如何实现简单深度优先搜索？
+
+用**递归 / 栈**，一路到底再回溯。
+
+### 242. 如何实现装饰器链？
+
+多个装饰器叠加，**从上到下装饰，从下到上执行**。
+
+### 243. 如何实现链表？
+
+节点类 + 值 + next 指针，实现增删查。
+
+### 244. 如何进行网络编程？
+
+`socket`模块，TCP/UDP 通信。
+
+### 246. 如何实现 Python 反射？
+
+`getattr()`、`setattr()`、`hasattr()`动态操作对象属性 / 方法。
+
+### 248. 什么是事件驱动编程？
+
+程序由**事件触发**执行（点击、消息、IO），循环等待事件分发。
+
+### 252. 是否使用过`functools`中的函数？
+
+- `lru_cache`：缓存
+- `wraps`：还原装饰器元信息
+- `reduce`：累积计算
+- `partial`：偏函数
+
+### 258. `asyncio`模块
+
+异步 IO 框架，基于事件循环，实现**单线程并发**，适合高 IO 场景。
+
+### 259. 多继承与 MRO
+
+Python 支持**多继承**，按**MRO（C3 算法）** 顺序解析方法调用。
+
+### 260. 猴子补丁
+
+运行时**动态修改模块 / 类 / 方法**；
+
+避免场景：可读性差、易出错、影响第三方库。
+
+### 261. 生成器表达式
+
+`(x for x in lst)`，**惰性计算**，省内存。
+
+### 262. 装饰器工厂
+
+接收参数的**装饰器生成器**，灵活配置装饰器行为。
+
+### 263. 协程与异步 IO
+
+- ### 一、协程（Coroutine）是什么？
+
+  **一句话**：协程是**可以暂停、恢复执行**的轻量级函数，运行在单线程内，由程序员自己控制切换，不由操作系统管理。
+
+  - 比线程**轻量百倍**，几千上万个协程也不卡顿
+  - 不占用系统调度资源，切换极快
+  - 共享同一个线程内存，无锁竞争问题
+  - Python 里用 `async def` 定义
+
+  ------
+
+  ### 二、协程怎么用？（最实用写法）
+
+  ```python
+  import asyncio
+  
+  # 1. 定义协程函数
+  async def task():
+      print("开始")
+      await asyncio.sleep(1)  # 模拟IO等待，这里会让出执行权
+      print("结束")
+  
+  # 2. 运行协程
+  asyncio.run(task())
+  ```
+
+  **核心关键字**：
+
+  - `async def`：声明一个**协程函数**
+  - `await`：**暂停当前协程**，等待耗时操作完成，同时让其他协程运行
+
+  ------
+
+  ### 三、异步 IO 是什么？
+
+  **一句话**：在等待 IO（网络请求、文件读写、数据库查询）时，**不卡住程序**，去做别的事情。
+
+  - 非阻塞
+  - 单线程实现高并发
+  - 特别适合爬虫、API 服务、批量请求
+
+  ------
+
+  ### 四、协程的作用（实用性总结）
+
+  1. **高并发处理网络请求**（爬虫、接口调用）
+  2. **不阻塞主线程**，程序更流畅
+  3. **资源消耗极低**（比线程 / 进程省太多）
+  4. **代码更简洁**，不用写锁、不用处理进程通信
+  5. 能轻松支撑**成千上万并发连接**
+
+  ------
+
+  ### 五、最经典的实用场景（并发请求）
+
+  ```python
+  import asyncio
+  
+  async def fetch(url):
+      print("请求", url)
+      await asyncio.sleep(1)  # 模拟网络IO
+      print("完成", url)
+  
+  async def main():
+      # 同时跑10个任务
+      tasks = [fetch(f"url{i}") for i in range(10)]
+      await asyncio.gather(*tasks)
+  
+  asyncio.run(main())
+  ```
+
+  **结果**：10 个任务总共只等待 1 秒，而不是 10 秒！
+
+  ------
+
+  # 极简背诵版（面试直接说）
+
+  - **协程**：用户态轻量级函数，可暂停恢复，`async/await` 实现，单线程内切换，开销极小。
+  - **异步 IO**：非阻塞 IO，等待时不卡住程序。
+  - **用途**：高并发网络请求、爬虫、API 服务，性能远超多线程。
+
+  ------
+
+  ### 总结
+
+  - **协程 = 可暂停的轻量级函数**
+  - **异步 IO = 不卡住的等待**
+  - **优点**：高并发、低资源、代码简洁
+  - **用法**：`async def` + `await` + `asyncio`
+
+### 264. `async`/`await`
+
+- `async`：定义协程
+- `await`：挂起耗时操作，切换任务
+
+### 265. `weakref`弱引用
+
+不增加引用计数，避免**循环引用**导致内存泄漏。
+
+### 266. 函数是一等对象
+
+函数可**赋值、传参、返回、存储**，支持函数式编程。
+
+### 272. 函数式编程
+
+用纯函数、不可变数据、高阶函数，避免副作用。
+
+### 273. 描述符
+
+实现`__get__`/`__set__`/`__delete__`的对象，控制属性访问。
+
+### 274. 数据封装和抽象
+
+- **封装**：打包数据方法
+- **抽象**：隐藏细节，暴露接口
+
+### 275. 线程同步机制
+
+`Lock`、`RLock`、`Semaphore`、`Event`，避免线程安全问题。
+
+### 276. `operator`模块
+
+提供内置操作符的函数接口，配合`map`/`reduce`使用。
+
+### 277. `xml.etree.ElementTree`
+
+解析、生成、操作 XML 数据。
 
 ### 基础语法
 1. 什么是Python？
